@@ -1,56 +1,113 @@
-# Welcome to your Expo app 👋
+# EdSpace for Android & iOS
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+The native app for [EdSpace](https://edville.space), the social network for EdVille
+students and teachers. It is the mobile counterpart of `~/projects/website/EdSpace` and talks to
+the same API, so accounts, posts and moderation are shared with the website.
 
-## Get started
+Built with [Expo](https://expo.dev) (SDK 57, React Native 0.86) and Expo Router — one TypeScript
+codebase for both platforms.
 
-1. Install dependencies
+## Features
 
-   ```bash
-   npm install
-   ```
+Everything the website does:
 
-2. Start the app
+- Sign up with an `@edville.edu.kz` email and a 6-digit code (the pending sign-up survives the app
+  being closed while you fetch the code), log in with email or `@username`, reset a password.
+- Students pick their class; teachers can link their timetable and get the Teacher badge once a
+  moderator approves them.
+- Home feeds: Following, Discover, and your class (or the Teachers feed for teachers).
+- Posts up to 300 characters with up to 4 photos (from the library or camera, resized on the
+  device like the website does) and alt text; replies and threads, likes, reposts, bookmarks,
+  share links, @mentions, #hashtags, links that open EdSpace pages in-app.
+- Explore with search (posts, people, classes), trending tags and the class list.
+- Classes and the Teachers staff room, with members and timetable links.
+- Profiles with banner, photo, bio, timetable, followers/following and Posts / Replies / Media /
+  Likes; edit your profile.
+- Notifications with an unread badge (checked every 45 s while the app is open, as on the web).
+- Settings: class or teacher status, light / dark / system theme, password, log out, delete account.
+- Moderation for moderators: teacher requests, reports, deleting posts, suspending accounts.
 
-   ```bash
-   npx expo start
-   ```
+## Run it
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```sh
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Scan the QR code with **Expo Go** ([Android](https://play.google.com/store/apps/details?id=host.exp.exponent),
+[iOS](https://apps.apple.com/app/expo-go/id982107779)) — no Xcode or Android Studio needed. Press
+`a` to open it in a running Android emulator.
 
-### Other setup steps
+The app uses the live server (`https://edville.space`) by default. To use a local one,
+start the website's server and set `EXPO_PUBLIC_API_URL` in `.env.local` (see `.env.example`):
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```sh
+# in ~/projects/website/EdSpace/server — HOST=0.0.0.0 so phones on your Wi-Fi can reach it
+HOST=0.0.0.0 PORT=3999 npm run dev
+```
 
-## Learn more
+Without SMTP the server prints verification codes to its log.
 
-To learn more about developing your project with Expo, look at the following resources:
+## Build and publish
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Builds run in the cloud with [EAS](https://docs.expo.dev/build/introduction/), so iOS builds work
+from Linux too. You need an Expo account; iOS also needs an Apple Developer account.
 
-## Join the community
+```sh
+npx eas-cli@latest login
+npx eas-cli@latest build --profile preview --platform android   # installable .apk to share
+npx eas-cli@latest build --profile production --platform all    # store builds (.aab + .ipa)
+npx eas-cli@latest submit --platform ios                        # upload to App Store Connect / TestFlight
+npx eas-cli@latest submit --platform android                    # upload to Google Play
+```
 
-Join our community of developers creating universal apps.
+The first build asks to link the project to your Expo account (it adds the project id to
+`app.json`) and can create the signing keys for you.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+App identifiers (`app.json`): `com.altynkhan.edspace` on both platforms. Change them before the
+first store upload if you want something else — they can't change afterwards.
+
+## Layout
+
+```
+src/app/            screens (Expo Router: every file is a route)
+  (auth)/           welcome, log in, sign up, forgot password
+  (app)/(tabs)/     Home, Explore, Classes, Notifications, your profile
+  (app)/            post/[id], [handle] (/@handle), classes/[slug], teachers, search,
+                    bookmarks, settings, admin, compose (modal), edit-profile (modal)
+src/components/     UI: post card, feeds, sheets, profile, composer pieces…
+src/lib/            API client, session, React Query setup, shared post store, image prep
+src/theme/          the EdSpace palette (from the website's styles.css) and fonts
+scripts/make-icons.sh  regenerates the app icon / splash from the favicon design
+```
+
+Routes mirror the website's paths (`/post/12`, `/@handle`, `/classes/10a`), so EdSpace links
+inside posts open the right screen.
+
+### How it talks to the server
+
+The API sets an httpOnly session cookie, and the app's networking layer stores and sends cookies
+like a browser, so the app uses the same session mechanism as the website — no server changes
+were needed (tested on Android: the session survives killing and restarting the app). Mutating
+requests send the `x-edspace: 1` header the server's CSRF check expects. Images under `/uploads`
+are public.
+
+Expo installs its own `fetch` as the global one. It doesn't accept React Native's old
+`{ uri, name, type }` form-data parts, so uploads append an `expo-file-system` `File` instead
+(`src/lib/image.ts`).
+
+## Checks
+
+```sh
+npx tsc --noEmit
+npx expo lint
+npx expo-doctor
+```
+
+## Not included yet
+
+- **Push notifications** — the server has no push support; notifications show when the app is
+  opened (and the badge refreshes every 45 s while it's open).
+- **Opening edville.space links in the app from outside** (universal / app links) — needs
+  `apple-app-site-association` and `assetlinks.json` served by the website. The `edspace://`
+  scheme works already, e.g. `edspace:///post/12`.
