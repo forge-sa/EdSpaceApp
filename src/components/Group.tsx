@@ -1,6 +1,6 @@
 import type { UseQueryResult } from '@tanstack/react-query';
 import { CalendarDays, Users } from 'lucide-react-native';
-import { useState, type ReactNode } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { errorMessage } from '@/lib/api';
 import { openExternal } from '@/lib/links';
@@ -12,13 +12,36 @@ import { Text } from './Text';
 import { Button, Empty, ErrorState, Loading, Tabs } from './ui';
 import { UserRow } from './UserRow';
 
-/** A class or the staff room: hero, then Posts / Members tabs. */
-export function GroupScreen({ badge, dark, title, hint, timetableUrl, endpoint, members, emptyPosts, emptyMembers }: {
+type Tone = 'green' | 'dark' | 'soft';
+
+/** The badge, title and hint at the top of a class, the staff room or a club. */
+export function GroupHero({ badge, tone = 'green', title, hint }: { badge: ReactNode; tone?: Tone; title: string; hint?: ReactNode }) {
+  const c = useColors();
+  return (
+    <View style={styles.hero}>
+      <View style={[styles.badge, { backgroundColor: { green: c.green, dark: c.text, soft: c.greenSoft }[tone] }]}>{badge}</View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text w={800} size={20}>{title}</Text>
+        {hint ? <Text size={13} color="muted">{hint}</Text> : null}
+      </View>
+    </View>
+  );
+}
+
+/**
+ * A class, the staff room or a club: hero, then Posts / Members tabs.
+ * `extra` sits under the hero; `composer` heads the Posts tab.
+ */
+export function GroupScreen({ badge, tone, title, hint, timetableUrl, extra, composer, hideClub, endpoint, members, emptyPosts, emptyMembers }: {
   badge: ReactNode;
-  dark?: boolean;
+  tone?: Tone;
   title: string;
-  hint: string;
+  hint: ReactNode;
   timetableUrl?: string | null;
+  extra?: ReactNode;
+  composer?: ReactElement | null;
+  /** Leave the club label off posts (on a club's own feed). */
+  hideClub?: boolean;
   endpoint: string;
   members: UseQueryResult<ListUser[]>;
   emptyPosts: ReactNode;
@@ -31,13 +54,8 @@ export function GroupScreen({ badge, dark, title, hint, timetableUrl, endpoint, 
 
   const header = (
     <>
-      <View style={[styles.hero, { borderBottomColor: c.border }]}>
-        <View style={[styles.badge, { backgroundColor: dark ? c.text : c.green }]}>{badge}</View>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text w={800} size={20}>{title}</Text>
-          <Text size={13} color="muted">{hint}</Text>
-        </View>
-      </View>
+      <GroupHero badge={badge} tone={tone} title={title} hint={hint} />
+      {extra}
       {timetableUrl ? (
         <View style={{ paddingHorizontal: 16, paddingBottom: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border }}>
           <Button title="Timetable" icon={CalendarDays} variant="outline" onPress={() => openExternal(timetableUrl)} style={{ alignSelf: 'flex-start' }} />
@@ -52,7 +70,15 @@ export function GroupScreen({ badge, dark, title, hint, timetableUrl, endpoint, 
   );
 
   if (tab === 'posts') {
-    return <FeedList endpoint={endpoint} header={header} empty={emptyPosts} onRefreshExtra={members.refetch} />;
+    return (
+      <FeedList
+        endpoint={endpoint}
+        header={<>{header}{composer}</>}
+        empty={emptyPosts}
+        onRefreshExtra={members.refetch}
+        hideClub={hideClub}
+      />
+    );
   }
   return (
     <FlatList

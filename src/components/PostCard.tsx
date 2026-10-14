@@ -2,12 +2,12 @@ import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Bookmark, Ellipsis, Flag, Heart, Link2, MessageCircle, Repeat2, Share2, Trash2 } from 'lucide-react-native';
+import { Bookmark, Ellipsis, Flag, Heart, Link2, MessageCircle, Repeat2, Shapes, Share2, Trash2 } from 'lucide-react-native';
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
 import { Alert, Platform, Pressable, Share, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { api, del, errorMessage, mediaUrl, webUrl } from '@/lib/api';
 import { compact, shortTime } from '@/lib/format';
-import { postHref, profileHref } from '@/lib/links';
+import { clubHref, postHref, profileHref } from '@/lib/links';
 import { getPost, markDeleted, putPost, usePost } from '@/lib/postStore';
 import { feedKey, invalidateFeeds, queryClient } from '@/lib/queries';
 import { useSession } from '@/lib/session';
@@ -283,7 +283,19 @@ export function Tombstone({ children = 'This post was deleted.' }: { children?: 
   );
 }
 
-export function PostCard({ post: initial, repostedBy, threadLine, borderless, onDeleted, showDeleted }: {
+/** "Posted in <club>", opening the club. */
+export function ClubContext({ club, style }: { club: NonNullable<Post['club']>; style?: StyleProp<ViewStyle> }) {
+  const c = useColors();
+  const router = useRouter();
+  return (
+    <Pressable onPress={() => router.push(clubHref(club.id))} style={[styles.context, style]} hitSlop={4} accessibilityRole="link" accessibilityLabel={`Posted in ${club.name}`}>
+      <Shapes size={15} color={c.muted} />
+      <Text w={600} size={13} color="muted" numberOfLines={1}>{club.name}</Text>
+    </Pressable>
+  );
+}
+
+export function PostCard({ post: initial, repostedBy, threadLine, borderless, onDeleted, showDeleted, hideClub }: {
   post: Post;
   repostedBy?: FeedItem['repostedBy'];
   /** Draws the line that joins a post to the reply below it. */
@@ -292,6 +304,7 @@ export function PostCard({ post: initial, repostedBy, threadLine, borderless, on
   onDeleted?: (id: number) => void;
   /** Show a tombstone for deleted posts instead of hiding them. */
   showDeleted?: boolean;
+  hideClub?: boolean;
 }) {
   const c = useColors();
   const router = useRouter();
@@ -313,6 +326,7 @@ export function PostCard({ post: initial, repostedBy, threadLine, borderless, on
           <Text w={600} size={13} color="muted" numberOfLines={1}>{repostedBy.displayName} reposted</Text>
         </Pressable>
       )}
+      {post.club && !hideClub && <ClubContext club={post.club} />}
       <View style={{ flexDirection: 'row' }}>
         <View style={{ width: 44 }}>
           <Avatar user={a} />

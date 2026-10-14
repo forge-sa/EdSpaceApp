@@ -57,6 +57,8 @@ export interface Post {
   images: PostImage[];
   replyTo: { id: number; handle: string | null } | null;
   rootId: number | null;
+  /** The club it was posted in, if any. */
+  club: { id: number; name: string } | null;
   counts: { likes: number; reposts: number; replies: number };
   viewer: { liked: boolean; reposted: boolean; bookmarked: boolean };
 }
@@ -93,7 +95,22 @@ export interface AppConfig {
   mailConfigured: boolean;
 }
 
-export type NotificationType = 'like' | 'repost' | 'follow' | 'reply' | 'mention' | 'teacher_approved';
+export type ClubStatus = 'pending' | 'approved' | 'declined';
+
+/** A student club. Only approved clubs are public; the rest are the founder's requests. */
+export interface Club {
+  id: number;
+  name: string;
+  description: string;
+  status: ClubStatus;
+  createdAt: number;
+  /** null when the founder's account is suspended or deleted. */
+  owner: UserSummary | null;
+  members: number;
+  viewer: { isMember: boolean; isOwner: boolean };
+}
+
+export type NotificationType = 'like' | 'repost' | 'follow' | 'reply' | 'mention' | 'teacher_approved' | 'club_approved' | 'club_declined';
 
 export interface Notification {
   id: number;
@@ -102,6 +119,7 @@ export interface Notification {
   read: boolean;
   actor: UserSummary;
   post: Post | null;
+  club: { id: number; name: string; status: ClubStatus } | null;
 }
 
 export interface Report {

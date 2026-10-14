@@ -17,9 +17,10 @@ export default function AppLayout() {
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      {/* Cancel on the left, action on the right, so the title goes in the middle. */}
-      <Stack.Screen name="compose" options={{ presentation: 'modal', headerTitleAlign: 'center' }} />
-      <Stack.Screen name="edit-profile" options={{ presentation: 'modal', headerTitleAlign: 'center', title: 'Edit profile' }} />
+      {/* These draw their own header (see ModalHeader for why). */}
+      <Stack.Screen name="compose" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="edit-profile" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="new-club" options={{ presentation: 'modal', headerShown: false }} />
     </Stack>
   );
 }

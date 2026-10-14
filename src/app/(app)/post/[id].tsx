@@ -5,7 +5,7 @@ import { useRef } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Avatar, ClassTag, ModTag } from '@/components/Avatar';
 import { ComposePrompt } from '@/components/Feed';
-import { Media, PostActions, PostCard, Tombstone, usePostMenu } from '@/components/PostCard';
+import { ClubContext, Media, PostActions, PostCard, Tombstone, usePostMenu } from '@/components/PostCard';
 import { RichText } from '@/components/RichText';
 import { Span, Text } from '@/components/Text';
 import { Empty, Loading } from '@/components/ui';
@@ -35,6 +35,7 @@ function FocusedPost({ post: initial }: { post: Post }) {
 
   return (
     <View style={[styles.focus, { borderBottomColor: c.border }]}>
+      {post.club && <ClubContext club={post.club} style={{ marginLeft: 0, marginTop: 0, marginBottom: 10 }} />}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <Avatar user={a} />
         <Pressable style={{ flex: 1, minWidth: 0 }} onPress={() => router.push(profileHref(a.handle))}>

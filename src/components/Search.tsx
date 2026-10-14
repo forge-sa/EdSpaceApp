@@ -50,7 +50,7 @@ export function useTrending() {
 }
 
 export function useClasses() {
-  return useQuery({ queryKey: ['classes'], queryFn: () => api<{ classes: Required<ClassInfo>[]; teachers: number }>('/classes') });
+  return useQuery({ queryKey: ['classes'], queryFn: () => api<{ classes: Required<ClassInfo>[]; teachers: number; clubs?: number }>('/classes') });
 }
 
 export function Trending() {

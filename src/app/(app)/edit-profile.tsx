@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Stack, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useNavigation, usePreventRemove } from 'expo-router/react-navigation';
 import { Camera, ImageOff, Images, Trash2 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
@@ -7,10 +7,11 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-nat
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/Avatar';
+import { ModalHeader } from '@/components/ModalHeader';
 import { PlacementField } from '@/components/Placement';
 import { profileKey } from '@/components/Profile';
 import { useActionSheet, type SheetOption } from '@/components/Sheet';
-import { Input, Text } from '@/components/Text';
+import { Input } from '@/components/Text';
 import { useToast } from '@/components/Toast';
 import { Button, Field } from '@/components/ui';
 import { api, errorMessage, mediaUrl, patch } from '@/lib/api';
@@ -125,17 +126,10 @@ export default function EditProfile() {
   const banner = mediaUrl(me.banner);
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerLeft: () => (
-            <Pressable onPress={() => router.back()} hitSlop={10} accessibilityRole="button">
-              <Text w={600} size={16}>Cancel</Text>
-            </Pressable>
-          ),
-          headerRight: () => (
-            <Button title="Save" variant="dark" size="sm" onPress={save} loading={busy === 'save'} disabled={!displayName.trim() || bioLeft < 0 || busy != null} />
-          ),
-        }}
+      <ModalHeader
+        title="Edit profile"
+        onCancel={() => router.back()}
+        action={<Button title="Save" variant="dark" size="sm" onPress={save} loading={busy === 'save'} disabled={!displayName.trim() || bioLeft < 0 || busy != null} />}
       />
       <KeyboardAwareScrollView bottomOffset={24} keyboardShouldPersistTaps="handled" style={{ flex: 1, backgroundColor: c.surface }} contentContainerStyle={{ padding: 16, gap: 18, paddingBottom: insets.bottom + 24 }}>
         <View>

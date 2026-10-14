@@ -20,7 +20,7 @@ export const FAB_CLEARANCE = 96;
  * A paginated, pull-to-refresh list of posts from a feed endpoint.
  * Mount with key={endpoint} when the endpoint changes.
  */
-export function FeedList({ endpoint, header, empty, enabled = true, ref, onRefreshExtra, ...listProps }: {
+export function FeedList({ endpoint, header, empty, enabled = true, ref, onRefreshExtra, hideClub, ...listProps }: {
   endpoint: string;
   header?: ReactElement | null;
   empty?: ReactNode;
@@ -28,6 +28,8 @@ export function FeedList({ endpoint, header, empty, enabled = true, ref, onRefre
   ref?: Ref<FlatList<FeedItem>>;
   /** Also reloaded on pull-to-refresh (e.g. the profile above the posts). */
   onRefreshExtra?: () => Promise<unknown>;
+  /** Leave the club label off posts (on a club's own feed). */
+  hideClub?: boolean;
 } & Partial<Omit<FlatListProps<FeedItem>, 'data' | 'renderItem'>>) {
   const c = useColors();
   const feed = useFeed(endpoint, enabled, onRefreshExtra);
@@ -36,7 +38,7 @@ export function FeedList({ endpoint, header, empty, enabled = true, ref, onRefre
       ref={ref}
       data={feed.items}
       keyExtractor={(i) => i.key}
-      renderItem={({ item }) => <PostCard post={item.post} repostedBy={item.repostedBy} />}
+      renderItem={({ item }) => <PostCard post={item.post} repostedBy={item.repostedBy} hideClub={hideClub} />}
       ListHeaderComponent={header}
       ListEmptyComponent={
         feed.isPending ? <Loading /> : feed.isError ? <ErrorState message={errorMessage(feed.error)} onRetry={() => feed.refetch()} /> : <>{empty}</>
@@ -61,14 +63,19 @@ export function FeedList({ endpoint, header, empty, enabled = true, ref, onRefre
   );
 }
 
-/** Avatar + "What's happening at school?" — opens the composer. */
-export function ComposePrompt({ placeholder = 'What’s happening at school?', replyTo }: { placeholder?: string; replyTo?: number }) {
+/** Avatar + "What's happening at school?" — opens the composer (for a reply, or a post in a club). */
+export function ComposePrompt({ placeholder = 'What’s happening at school?', replyTo, club }: {
+  placeholder?: string;
+  replyTo?: number;
+  club?: { id: number; name: string };
+}) {
   const c = useColors();
   const router = useRouter();
   const me = useMe();
+  const params = replyTo ? { replyTo: String(replyTo) } : club ? { club: String(club.id), clubName: club.name } : null;
   return (
     <Pressable
-      onPress={() => router.push(replyTo ? { pathname: '/compose', params: { replyTo: String(replyTo) } } : '/compose')}
+      onPress={() => router.push(params ? { pathname: '/compose', params } : '/compose')}
       accessibilityRole="button"
       accessibilityLabel={placeholder}
       style={[styles.prompt, { borderBottomColor: c.border }]}

@@ -1,6 +1,6 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useFocusEffect, useRouter, useScrollToTop, type Href } from 'expo-router';
-import { BadgeCheck, Bell, Heart, Repeat2, UserPlus, type LucideIcon } from 'lucide-react-native';
+import { BadgeCheck, Bell, CircleX, Heart, Repeat2, Shapes, UserPlus, type LucideIcon } from 'lucide-react-native';
 import { useCallback, useMemo, useRef } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { Avatar } from '@/components/Avatar';
@@ -9,20 +9,35 @@ import { Span, Text } from '@/components/Text';
 import { Empty, ErrorState, Loading } from '@/components/ui';
 import { api, errorMessage, post } from '@/lib/api';
 import { shortTime } from '@/lib/format';
-import { postHref, profileHref } from '@/lib/links';
+import { clubHref, postHref, profileHref } from '@/lib/links';
 import { putPosts } from '@/lib/postStore';
 import { useRefresh } from '@/lib/queries';
 import { useSession } from '@/lib/session';
 import type { Notification } from '@/lib/types';
 import { useColors } from '@/theme';
 
-const ICONS: Record<string, LucideIcon> = { like: Heart, repost: Repeat2, follow: UserPlus, teacher_approved: BadgeCheck };
+const ICONS: Record<string, LucideIcon> = { like: Heart, repost: Repeat2, follow: UserPlus, teacher_approved: BadgeCheck, club_approved: Shapes, club_declined: CircleX };
 const VERB: Record<string, string> = {
   like: 'liked your post',
   repost: 'reposted your post',
   follow: 'followed you',
   teacher_approved: 'confirmed your teacher account — you now have the Teacher badge',
 };
+
+/** What happened, for notifications that aren't about a post. */
+function verb(n: Notification) {
+  if (n.type === 'club_approved') return <>approved your club <Span w={700}>{n.club?.name}</Span> — it’s now open for everyone to join</>;
+  if (n.type === 'club_declined') return <>didn’t approve your club <Span w={700}>{n.club?.name}</Span></>;
+  return VERB[n.type] ?? '';
+}
+
+function targetOf(n: Notification): Href {
+  if (n.type === 'follow') return profileHref(n.actor.handle);
+  if (n.type === 'teacher_approved') return '/teachers';
+  if (n.type === 'club_approved' && n.club) return clubHref(n.club.id);
+  if (n.type === 'club_declined') return '/clubs';
+  return postHref(n.post?.id ?? 0);
+}
 
 interface Page {
   items: Notification[];
@@ -88,11 +103,10 @@ export default function Notifications() {
           return <View style={unreadBg}><PostCard post={n.post} /></View>;
         }
         const Icon = ICONS[n.type] ?? Bell;
-        const target: Href = n.type === 'follow' ? profileHref(n.actor.handle) : n.type === 'teacher_approved' ? '/teachers' : postHref(n.post?.id ?? 0);
-        const color = n.type === 'like' ? c.like : c.green;
+        const color = n.type === 'like' ? c.like : n.type === 'club_declined' ? c.muted : c.green;
         return (
           <Pressable
-            onPress={() => router.push(target)}
+            onPress={() => router.push(targetOf(n))}
             style={({ pressed }) => [styles.row, { borderBottomColor: c.border }, unreadBg, pressed && { backgroundColor: c.hover }]}
           >
             <View style={{ width: 44, alignItems: 'flex-end', paddingTop: 2 }}>
@@ -101,7 +115,7 @@ export default function Notifications() {
             <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
               <Avatar user={n.actor} size={34} />
               <Text>
-                <Span w={700}>{n.actor.displayName}</Span> {VERB[n.type] ?? ''}
+                <Span w={700}>{n.actor.displayName}</Span> {verb(n)}
                 <Span color="muted"> · {shortTime(n.createdAt)}</Span>
               </Text>
               {n.post && (n.post.text || n.post.images.length > 0) ? (

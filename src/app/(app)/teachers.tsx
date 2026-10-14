@@ -17,7 +17,7 @@ export default function Teachers() {
     <View style={{ flex: 1 }}>
       <Stack.Screen options={{ title: 'Teachers' }} />
       <GroupScreen
-        dark
+        tone="dark"
         badge={<Presentation size={34} color={c.surface} />}
         title={me.role === 'teacher' ? 'Staff room' : 'EdVille teachers'}
         hint="Posts and people from teachers confirmed by EdSpace moderators."

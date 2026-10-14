@@ -21,11 +21,13 @@ Everything the website does:
   share links, @mentions, #hashtags, links that open EdSpace pages in-app.
 - Explore with search (posts, people, classes), trending tags and the class list.
 - Classes and the Teachers staff room, with members and timetable links.
+- Clubs: start one (a moderator approves it first), join or leave, post in a club you're in, and
+  see its members. The founder or a moderator can delete a club.
 - Profiles with banner, photo, bio, timetable, followers/following and Posts / Replies / Media /
   Likes; edit your profile.
 - Notifications with an unread badge (checked every 45 s while the app is open, as on the web).
 - Settings: class or teacher status, light / dark / system theme, password, log out, delete account.
-- Moderation for moderators: teacher requests, reports, deleting posts, suspending accounts.
+- Moderation for moderators: teacher and club requests, reports, deleting posts, suspending accounts.
 
 ## Run it
 
@@ -73,8 +75,8 @@ first store upload if you want something else — they can't change afterwards.
 src/app/            screens (Expo Router: every file is a route)
   (auth)/           welcome, log in, sign up, forgot password
   (app)/(tabs)/     Home, Explore, Classes, Notifications, your profile
-  (app)/            post/[id], [handle] (/@handle), classes/[slug], teachers, search,
-                    bookmarks, settings, admin, compose (modal), edit-profile (modal)
+  (app)/            post/[id], [handle] (/@handle), classes/[slug], teachers, clubs, clubs/[id],
+                    search, bookmarks, settings, admin, compose, edit-profile and new-club (modals)
 src/components/     UI: post card, feeds, sheets, profile, composer pieces…
 src/lib/            API client, session, React Query setup, shared post store, image prep
 src/theme/          the EdSpace palette (from the website's styles.css) and fonts

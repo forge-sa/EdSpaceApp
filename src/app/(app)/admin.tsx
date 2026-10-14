@@ -1,19 +1,20 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Redirect, Stack, useRouter } from 'expo-router';
-import { Ban, BadgeCheck, CalendarDays, Check, Flag, Mail, Presentation, ShieldCheck, Trash2, X } from 'lucide-react-native';
+import { Ban, BadgeCheck, CalendarDays, Check, Flag, Mail, Presentation, Shapes, ShieldCheck, Trash2, X } from 'lucide-react-native';
 import { Alert, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Avatar } from '@/components/Avatar';
+import { CLUBS_KEY, ClubBadge } from '@/components/Club';
 import { PostCard, Tombstone } from '@/components/PostCard';
 import { Span, Text } from '@/components/Text';
 import { useToast } from '@/components/Toast';
 import { Button, Empty, Loading, Pill } from '@/components/ui';
 import { api, del, errorMessage, post } from '@/lib/api';
 import { shortTime } from '@/lib/format';
-import { openExternal, profileHref } from '@/lib/links';
+import { clubHref, openExternal, profileHref } from '@/lib/links';
 import { markDeleted, putPosts } from '@/lib/postStore';
 import { useRefresh } from '@/lib/queries';
 import { useMe, useSession } from '@/lib/session';
-import type { Report, TeacherRequest } from '@/lib/types';
+import type { Club, Report, TeacherRequest } from '@/lib/types';
 import { useColors } from '@/theme';
 
 export default function Admin() {
@@ -41,7 +42,11 @@ function Moderation() {
     queryKey: ['admin', 'teachers'],
     queryFn: () => api<{ teachers: TeacherRequest[] }>('/admin/teachers').then((d) => d.teachers),
   });
-  const { refreshing, onRefresh } = useRefresh(() => Promise.all([reports.refetch(), teachers.refetch(), refreshUnread()]));
+  const clubs = useQuery({
+    queryKey: ['admin', 'clubs'],
+    queryFn: () => api<{ clubs: Club[] }>('/admin/clubs').then((d) => d.clubs),
+  });
+  const { refreshing, onRefresh } = useRefresh(() => Promise.all([reports.refetch(), teachers.refetch(), clubs.refetch(), refreshUnread()]));
 
   const dropReports = (pred: (r: Report) => boolean) =>
     client.setQueryData<Report[]>(['admin', 'reports'], (list) => list?.filter((r) => !pred(r)));
@@ -51,6 +56,19 @@ function Moderation() {
       await post(`/admin/teachers/${t.handle}/${approve ? 'approve' : 'decline'}`);
       client.setQueryData<TeacherRequest[]>(['admin', 'teachers'], (list) => list?.filter((x) => x.id !== t.id));
       toast(approve ? `${t.displayName} is now a confirmed teacher` : 'Request declined', approve ? 'success' : 'info');
+      refreshUnread();
+    } catch (err) {
+      toast(errorMessage(err), 'error');
+    }
+  };
+
+  const decideClub = async (club: Club, approve: boolean) => {
+    try {
+      await post(`/admin/clubs/${club.id}/${approve ? 'approve' : 'decline'}`);
+      client.setQueryData<Club[]>(['admin', 'clubs'], (list) => list?.filter((x) => x.id !== club.id));
+      client.invalidateQueries({ queryKey: CLUBS_KEY });
+      client.invalidateQueries({ queryKey: ['classes'] });
+      toast(approve ? `${club.name} is now open` : 'Club declined', approve ? 'success' : 'info');
       refreshUnread();
     } catch (err) {
       toast(errorMessage(err), 'error');
@@ -126,6 +144,32 @@ function Moderation() {
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
               <Button title="Approve" icon={BadgeCheck} size="sm" onPress={() => decideTeacher(t, true)} />
               <Button title="Decline" icon={X} size="sm" variant="outline" onPress={() => decideTeacher(t, false)} />
+            </View>
+          </View>
+        </View>
+      ))}
+
+      {heading(Shapes, 'Club requests', clubs.data?.length)}
+      {clubs.isPending ? <Loading /> : !clubs.data?.length ? (
+        <Text size={14} color="muted" style={{ paddingHorizontal: 16, paddingBottom: 16 }}>No clubs are waiting for approval.</Text>
+      ) : clubs.data.map((club) => (
+        <View key={club.id} style={[styles.request, { borderTopColor: c.border }]}>
+          {club.owner ? <Avatar user={club.owner} /> : <ClubBadge />}
+          <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+            <Text numberOfLines={1}>
+              <Span w={700} onPress={() => router.push(clubHref(club.id))}>{club.name}</Span>
+              <Span color="muted"> · {shortTime(club.createdAt)}</Span>
+            </Text>
+            <Text size={14}>{club.description}</Text>
+            {club.owner && (
+              <Text size={13} color="muted">
+                Started by <Span w={600} color="greenDeep" onPress={() => router.push(profileHref(club.owner!.handle))}>{club.owner.displayName} @{club.owner.handle}</Span>
+                {club.owner.className ? ` · ${club.owner.className}` : ''}
+              </Text>
+            )}
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+              <Button title="Approve" icon={Check} size="sm" onPress={() => decideClub(club, true)} />
+              <Button title="Decline" icon={X} size="sm" variant="outline" onPress={() => decideClub(club, false)} />
             </View>
           </View>
         </View>

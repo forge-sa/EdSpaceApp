@@ -1,4 +1,5 @@
 import { useRouter, useScrollToTop } from 'expo-router';
+import { Shapes } from 'lucide-react-native';
 import { useRef } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Ribbon } from '@/components/brand';
@@ -11,7 +12,10 @@ import { useRefresh } from '@/lib/queries';
 import { useMe } from '@/lib/session';
 import { useColors } from '@/theme';
 
-type Card = { kind: 'class'; name: string; slug: string; members: number } | { kind: 'teachers'; members: number };
+type Card =
+  | { kind: 'class'; name: string; slug: string; members: number }
+  | { kind: 'teachers'; members: number }
+  | { kind: 'clubs'; clubs: number };
 
 export default function Classes() {
   const c = useColors();
@@ -25,7 +29,11 @@ export default function Classes() {
 
   const columns = width >= 600 ? 4 : 3;
   const cards: Card[] = query.data
-    ? [...query.data.classes.map((cl) => ({ kind: 'class' as const, name: cl.name, slug: cl.slug, members: cl.members })), { kind: 'teachers', members: query.data.teachers }]
+    ? [
+        ...query.data.classes.map((cl) => ({ kind: 'class' as const, name: cl.name, slug: cl.slug, members: cl.members })),
+        { kind: 'teachers', members: query.data.teachers },
+        { kind: 'clubs', clubs: query.data.clubs ?? 0 },
+      ]
     : [];
 
   return (
@@ -34,13 +42,29 @@ export default function Classes() {
       data={cards}
       key={columns}
       numColumns={columns}
-      keyExtractor={(card) => (card.kind === 'class' ? card.slug : 'teachers')}
+      keyExtractor={(card) => (card.kind === 'class' ? card.slug : card.kind)}
       contentContainerStyle={{ padding: 12, gap: 10 }}
       columnWrapperStyle={{ gap: 10 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.green} colors={[c.green]} />}
       ListHeaderComponent={<Text color="muted" size={14} style={{ paddingHorizontal: 4, paddingBottom: 4 }}>Every class at EdVille, from the school timetable</Text>}
       ListEmptyComponent={query.isPending ? <Loading /> : query.isError ? <ErrorState message={errorMessage(query.error)} onRetry={() => query.refetch()} /> : null}
       renderItem={({ item }) => {
+        if (item.kind === 'clubs') {
+          return (
+            <Pressable
+              onPress={() => router.push('/clubs')}
+              accessibilityRole="link"
+              accessibilityLabel={`Clubs, ${item.clubs} ${item.clubs === 1 ? 'club' : 'clubs'}`}
+              style={({ pressed }) => [styles.card, { backgroundColor: c.surfaceRaised, borderColor: pressed ? c.green : c.border }]}
+            >
+              <View style={[styles.name, styles.clubsName, { backgroundColor: c.greenSoft }]}>
+                <Shapes size={15} color={c.greenDeep} />
+                <Text w={800} size={16} color="greenDeep" style={{ letterSpacing: -0.5 }} numberOfLines={1}>Clubs</Text>
+              </View>
+              <Text w={600} size={13} color="muted">{item.clubs} {item.clubs === 1 ? 'club' : 'clubs'}</Text>
+            </Pressable>
+          );
+        }
         const teachers = item.kind === 'teachers';
         const mine = teachers ? me.role === 'teacher' : item.name === me.className;
         return (
@@ -73,4 +97,5 @@ export default function Classes() {
 const styles = StyleSheet.create({
   card: { flex: 1, gap: 2, padding: 12, borderRadius: 16, borderWidth: 1, overflow: 'hidden', minHeight: 96 },
   name: { alignSelf: 'flex-start', borderRadius: 10, paddingHorizontal: 9, paddingVertical: 1, marginBottom: 6, maxWidth: '100%' },
+  clubsName: { flexDirection: 'row', alignItems: 'center', gap: 5 },
 });

@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useNavigation, usePreventRemove } from 'expo-router/react-navigation';
 import { Camera, ImagePlus, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
@@ -9,6 +9,7 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import Svg, { Circle } from 'react-native-svg';
 import { Avatar } from '@/components/Avatar';
 import { KeyboardPadded } from '@/components/Keyboard';
+import { ModalHeader } from '@/components/ModalHeader';
 import { profileKey } from '@/components/Profile';
 import { Input, Span, Text } from '@/components/Text';
 import { useToast } from '@/components/Toast';
@@ -38,8 +39,10 @@ export default function Compose() {
   const insets = useSafeAreaInsets();
   const toast = useToast();
   const { config } = useSession();
-  const { replyTo: replyParam } = useLocalSearchParams<{ replyTo?: string }>();
+  const { replyTo: replyParam, club: clubParam, clubName } = useLocalSearchParams<{ replyTo?: string; club?: string; clubName?: string }>();
   const replyId = replyParam ? Number(replyParam) : null;
+  // A new post (not a reply) can go into a club the user belongs to.
+  const clubId = !replyId && clubParam ? Number(clubParam) : null;
   const replyTo = usePostById(replyId);
   const max = config?.postMaxLength ?? 300;
 
@@ -103,6 +106,7 @@ export default function Compose() {
     const form = new FormData();
     form.append('text', text);
     if (replyId) form.append('replyTo', String(replyId));
+    if (clubId) form.append('club', String(clubId));
     images.forEach((img) => appendFile(form, 'images', img.file));
     form.append('alts', JSON.stringify(images.map((img) => img.alt)));
     try {
@@ -115,7 +119,7 @@ export default function Compose() {
       }
       invalidateFeeds();
       queryClient.invalidateQueries({ queryKey: profileKey(me.handle) });
-      toast(replyId ? 'Reply posted' : 'Posted', 'success');
+      toast(replyId ? 'Reply posted' : clubId && clubName ? `Posted to ${clubName}` : 'Posted', 'success');
       setDone(true);
     } catch (err) {
       setBusy(false);
@@ -125,18 +129,12 @@ export default function Compose() {
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: replyId ? 'Reply' : 'New post',
-          headerLeft: () => (
-            <Pressable onPress={() => router.back()} hitSlop={10} accessibilityRole="button">
-              <Text w={600} size={16}>Cancel</Text>
-            </Pressable>
-          ),
-          headerRight: () => <Button title={replyId ? 'Reply' : 'Post'} size="sm" onPress={submit} disabled={!canPost} loading={busy} />,
-        }}
-      />
       <KeyboardPadded style={{ backgroundColor: c.surface }}>
+        <ModalHeader
+          title={replyId ? 'Reply' : 'New post'}
+          onCancel={() => router.back()}
+          action={<Button title={replyId ? 'Reply' : 'Post'} size="sm" onPress={submit} disabled={!canPost} loading={busy} />}
+        />
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 16, paddingBottom: 24 }}>
           {replyTo && (
             <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
@@ -158,13 +156,16 @@ export default function Compose() {
               {replyTo && (
                 <Text size={14} color="muted">Replying to <Span w={600} color="greenDeep">@{replyTo.author.handle}</Span></Text>
               )}
+              {clubId && clubName ? (
+                <Text size={14} color="muted">Posting in <Span w={600} color="greenDeep">{clubName}</Span></Text>
+              ) : null}
               <Input
                 bare
                 multiline
                 autoFocus
                 value={text}
                 onChangeText={setText}
-                placeholder={replyId ? 'Write your reply' : 'What’s happening at school?'}
+                placeholder={replyId ? 'Write your reply' : clubId && clubName ? `Post to ${clubName}` : 'What’s happening at school?'}
                 accessibilityLabel={replyId ? 'Reply text' : 'Post text'}
                 style={{ fontSize: 19, lineHeight: 26, minHeight: 110, paddingTop: 8, paddingBottom: 8, textAlignVertical: 'top' }}
               />
