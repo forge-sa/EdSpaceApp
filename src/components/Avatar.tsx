@@ -41,8 +41,35 @@ export function Avatar({ user, size = 44, link = true, ring, style }: {
   );
 }
 
-/** A student's class, or "Teacher" for a moderator-approved teacher. */
-export function ClassTag({ user, link = true }: { user: Pick<UserSummary, 'isTeacher' | 'className' | 'classSlug'>; link?: boolean }) {
+type TagUser = Pick<UserSummary, 'isTeacher' | 'className' | 'classSlug'> & Partial<Pick<UserSummary, 'parliament'>>;
+
+/** A student's class (or "Teacher"), followed by their school parliament role if they have one. */
+export function ClassTag({ user, link = true }: { user: TagUser; link?: boolean }) {
+  return <><GroupTag user={user} link={link} /><RoleTag user={user} link={link} /></>;
+}
+
+const ROLE_SHORT = { president: 'President', vice_president: 'Vice-President', minister: 'Minister' } as const;
+
+/** A school parliament role. Ministers show as "Minister"; the full title is on their profile. */
+export function RoleTag({ user, link = true }: { user: Partial<Pick<UserSummary, 'parliament'>>; link?: boolean }) {
+  const c = useColors();
+  const router = useRouter();
+  const p = user.parliament;
+  if (!p) return null;
+  const tag = (
+    <View style={{ backgroundColor: c.goldSoft, borderRadius: 6, paddingHorizontal: 6, height: 19, justifyContent: 'center', flexShrink: 0 }}>
+      <Text w={700} size={12} color="gold" style={{ lineHeight: 15 }} maxFontSizeMultiplier={1.2} numberOfLines={1}>{ROLE_SHORT[p.kind] ?? p.title}</Text>
+    </View>
+  );
+  if (!link) return tag;
+  return (
+    <Pressable onPress={() => router.push('/parliament')} hitSlop={6} accessibilityRole="link" accessibilityLabel={`${p.title}, School Parliament`}>
+      {tag}
+    </Pressable>
+  );
+}
+
+function GroupTag({ user, link }: { user: TagUser; link: boolean }) {
   const c = useColors();
   const router = useRouter();
   let label: string, bg: string, fg: string, href: Parameters<typeof router.push>[0] | null;

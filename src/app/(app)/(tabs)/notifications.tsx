@@ -1,6 +1,6 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useFocusEffect, useRouter, useScrollToTop, type Href } from 'expo-router';
-import { BadgeCheck, Bell, CircleX, Heart, Repeat2, Shapes, UserPlus, type LucideIcon } from 'lucide-react-native';
+import { BadgeCheck, Bell, CircleX, Heart, Landmark, Repeat2, Shapes, UserPlus, type LucideIcon } from 'lucide-react-native';
 import { useCallback, useMemo, useRef } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { Avatar } from '@/components/Avatar';
@@ -19,12 +19,14 @@ import { useColors } from '@/theme';
 const ICONS: Record<string, LucideIcon> = {
   like: Heart, repost: Repeat2, follow: UserPlus, teacher_approved: BadgeCheck,
   club_approved: Shapes, club_declined: CircleX, club_join_request: UserPlus, club_join_approved: Shapes,
+  parliament_role: Landmark,
 };
 const VERB: Record<string, string> = {
   like: 'liked your post',
   repost: 'reposted your post',
   follow: 'followed you',
   teacher_approved: 'confirmed your teacher account — you now have the Teacher badge',
+  parliament_role: 'gave you a role in the School Parliament',
 };
 
 /** What happened, for notifications that aren't about a post. */
@@ -39,6 +41,7 @@ function verb(n: Notification) {
 function targetOf(n: Notification): Href {
   if (n.type === 'follow') return profileHref(n.actor.handle);
   if (n.type === 'teacher_approved') return '/teachers';
+  if (n.type === 'parliament_role') return '/parliament';
   if (n.type === 'club_approved' && n.club) return clubHref(n.club.id);
   if (n.type === 'club_declined') return '/clubs';
   if (n.type === 'club_join_request' && n.club) return clubRequestsHref(n.club.id);
@@ -110,7 +113,7 @@ export default function Notifications() {
           return <View style={unreadBg}><PostCard post={n.post} /></View>;
         }
         const Icon = ICONS[n.type] ?? Bell;
-        const color = n.type === 'like' ? c.like : n.type === 'club_declined' ? c.muted : c.green;
+        const color = n.type === 'like' ? c.like : n.type === 'club_declined' ? c.muted : n.type === 'parliament_role' ? c.gold : c.green;
         return (
           <Pressable
             onPress={() => router.push(targetOf(n))}

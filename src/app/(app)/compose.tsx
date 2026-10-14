@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useNavigation, usePreventRemove } from 'expo-router/react-navigation';
-import { Camera, ImagePlus, X } from 'lucide-react-native';
+import { Camera, ImagePlus, ListChecks, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useKeyboardState } from 'react-native-keyboard-controller';
@@ -10,6 +10,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { Avatar } from '@/components/Avatar';
 import { KeyboardPadded } from '@/components/Keyboard';
 import { ModalHeader } from '@/components/ModalHeader';
+import { PollEditor, type PollDraft } from '@/components/Poll';
 import { profileKey } from '@/components/Profile';
 import { Input, Span, Text } from '@/components/Text';
 import { useToast } from '@/components/Toast';
@@ -39,10 +40,15 @@ export default function Compose() {
   const insets = useSafeAreaInsets();
   const toast = useToast();
   const { config } = useSession();
-  const { replyTo: replyParam, club: clubParam, clubName } = useLocalSearchParams<{ replyTo?: string; club?: string; clubName?: string }>();
+  const { replyTo: replyParam, club: clubParam, clubName, clubOwner } = useLocalSearchParams<{
+    replyTo?: string; club?: string; clubName?: string; clubOwner?: string;
+  }>();
   const replyId = replyParam ? Number(replyParam) : null;
   // A new post (not a reply) can go into a club the user belongs to.
   const clubId = !replyId && clubParam ? Number(clubParam) : null;
+  // School-wide polls are for the parliament; in a club, only its founder.
+  const canPoll = !replyId && (clubId ? clubOwner === '1' : me.canPoll);
+  const [poll, setPoll] = useState<PollDraft | null>(null);
   const replyTo = usePostById(replyId);
   const max = config?.postMaxLength ?? 300;
 
@@ -59,8 +65,9 @@ export default function Compose() {
 
   const count = charCount(text.trim());
   const remaining = max - count;
-  const canPost = !busy && processing === 0 && remaining >= 0 && (text.trim().length > 0 || images.length > 0);
-  const dirty = !done && (text.trim().length > 0 || images.length > 0);
+  const pollReady = !poll || (text.trim().length > 0 && poll.options.every((o) => o.trim().length > 0));
+  const canPost = !busy && processing === 0 && remaining >= 0 && (text.trim().length > 0 || images.length > 0) && pollReady;
+  const dirty = !done && (text.trim().length > 0 || images.length > 0 || Boolean(poll?.options.some((o) => o.trim())));
 
   // Swiping the sheet down (or Back) with a draft asks first.
   usePreventRemove(dirty, ({ data }) => {
@@ -109,6 +116,7 @@ export default function Compose() {
     if (clubId) form.append('club', String(clubId));
     images.forEach((img) => appendFile(form, 'images', img.file));
     form.append('alts', JSON.stringify(images.map((img) => img.alt)));
+    if (poll) form.append('poll', JSON.stringify({ options: poll.options.map((o) => o.trim()), anonymous: poll.anonymous }));
     try {
       const { post } = await api<{ post: Post }>('/posts', { method: 'POST', form });
       putPost(post);
@@ -165,10 +173,11 @@ export default function Compose() {
                 autoFocus
                 value={text}
                 onChangeText={setText}
-                placeholder={replyId ? 'Write your reply' : clubId && clubName ? `Post to ${clubName}` : 'What’s happening at school?'}
+                placeholder={replyId ? 'Write your reply' : poll ? 'Ask a question…' : clubId && clubName ? `Post to ${clubName}` : 'What’s happening at school?'}
                 accessibilityLabel={replyId ? 'Reply text' : 'Post text'}
                 style={{ fontSize: 19, lineHeight: 26, minHeight: 110, paddingTop: 8, paddingBottom: 8, textAlignVertical: 'top' }}
               />
+              {poll && <PollEditor poll={poll} onChange={setPoll} max={config?.pollMaxOptions} maxLength={config?.pollOptionMaxLength} />}
               {(images.length > 0 || processing > 0) && (
                 <View style={styles.attachments} onLayout={(e) => setRowWidth(e.nativeEvent.layout.width)}>
                   {images.map((img, i) => (
@@ -202,8 +211,18 @@ export default function Compose() {
           </View>
         </ScrollView>
         <View style={[styles.toolbar, { borderTopColor: c.border, backgroundColor: c.surface, paddingBottom: keyboardOpen ? 8 : insets.bottom + 8 }]}>
-          <IconButton icon={ImagePlus} label="Add photos" color={c.green} onPress={() => addImages('library')} disabled={images.length + processing >= MAX_IMAGES} />
-          <IconButton icon={Camera} label="Take a photo" color={c.green} onPress={() => addImages('camera')} disabled={images.length + processing >= MAX_IMAGES} />
+          <IconButton icon={ImagePlus} label="Add photos" color={c.green} onPress={() => addImages('library')} disabled={Boolean(poll) || images.length + processing >= MAX_IMAGES} />
+          <IconButton icon={Camera} label="Take a photo" color={c.green} onPress={() => addImages('camera')} disabled={Boolean(poll) || images.length + processing >= MAX_IMAGES} />
+          {canPoll && (
+            <IconButton
+              icon={ListChecks}
+              label={poll ? 'Remove poll' : 'Add a poll'}
+              color={c.green}
+              onPress={() => setPoll((p) => (p ? null : { options: ['', ''], anonymous: true }))}
+              disabled={images.length + processing > 0}
+              style={poll ? { backgroundColor: c.greenSoft } : undefined}
+            />
+          )}
           <View style={{ flex: 1 }} />
           {count > 0 && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>

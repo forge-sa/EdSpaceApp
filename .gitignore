@@ -44,3 +44,8 @@ example
 .claude/
 .idea/
 .vscode
+
+# Firebase service account key for push (uploaded to EAS, never committed).
+# google-services.json itself is fine to commit.
+*firebase-adminsdk*.json
+service-account*.json

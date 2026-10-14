@@ -12,14 +12,14 @@ import { Text } from './Text';
 import { Button, Empty, ErrorState, Loading, Tabs } from './ui';
 import { UserRow } from './UserRow';
 
-type Tone = 'green' | 'dark' | 'soft';
+type Tone = 'green' | 'dark' | 'soft' | 'gold';
 
-/** The badge, title and hint at the top of a class, the staff room or a club. */
+/** The badge, title and hint at the top of a class, the staff room, a club or the parliament. */
 export function GroupHero({ badge, tone = 'green', title, hint }: { badge: ReactNode; tone?: Tone; title: string; hint?: ReactNode }) {
   const c = useColors();
   return (
     <View style={styles.hero}>
-      <View style={[styles.badge, { backgroundColor: { green: c.green, dark: c.text, soft: c.greenSoft }[tone] }]}>{badge}</View>
+      <View style={[styles.badge, { backgroundColor: { green: c.green, dark: c.text, soft: c.greenSoft, gold: c.goldSoft }[tone] }]}>{badge}</View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text w={800} size={20}>{title}</Text>
         {hint ? <Text size={13} color="muted">{hint}</Text> : null}

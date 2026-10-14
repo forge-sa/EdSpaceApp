@@ -5,6 +5,7 @@ import { useRef } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Avatar, ClassTag, ModTag } from '@/components/Avatar';
 import { ComposePrompt } from '@/components/Feed';
+import { Poll } from '@/components/Poll';
 import { ClubContext, Media, PostActions, PostCard, Tombstone, usePostMenu } from '@/components/PostCard';
 import { RichText } from '@/components/RichText';
 import { Span, Text } from '@/components/Text';
@@ -59,6 +60,7 @@ function FocusedPost({ post: initial }: { post: Post }) {
         </Text>
       )}
       {post.text ? <RichText text={post.text} size={18} style={{ marginTop: 12 }} selectable /> : null}
+      {post.poll && <Poll post={post} />}
       <Media images={post.images} style={{ marginTop: 12 }} />
       <View style={[styles.line, { borderBottomColor: c.border }]}>
         <Text size={14} color="muted">{fullTime(post.createdAt)}</Text>

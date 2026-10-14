@@ -3,7 +3,7 @@ import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import {
-  BadgeCheck, CalendarDays, Ellipsis, GraduationCap, Hourglass, Link2, Presentation, Share2, Shield, ShieldOff, UserX,
+  BadgeCheck, CalendarDays, Ellipsis, GraduationCap, Hourglass, Landmark, Link2, Presentation, Share2, Shield, ShieldOff, UserX,
 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, Platform, Pressable, Share, StyleSheet, View } from 'react-native';
@@ -147,6 +147,12 @@ function ProfileHeader({ p, tab, setTab }: { p: Profile; tab: Tab; setTab: (t: T
             <Pressable onPress={() => p.classSlug && router.push(classHref(p.classSlug))} style={[styles.ribbon, { backgroundColor: c.green }]} accessibilityRole="link">
               <GraduationCap size={15} color={c.greenInk} />
               <Text w={800} size={13} color="greenInk">Class {p.className}</Text>
+            </Pressable>
+          ) : null}
+          {p.parliament ? (
+            <Pressable onPress={() => router.push('/parliament')} style={[styles.ribbon, { backgroundColor: c.goldSoft }]} accessibilityRole="link">
+              <Landmark size={15} color={c.gold} />
+              <Text w={800} size={13} color="gold">{p.parliament.title}</Text>
             </Pressable>
           ) : null}
           {p.timetableUrl ? (

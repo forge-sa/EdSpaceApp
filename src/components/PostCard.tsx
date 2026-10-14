@@ -15,6 +15,7 @@ import type { FeedItem, Post, PostImage } from '@/lib/types';
 import { useColors } from '@/theme';
 import { Avatar, ClassTag, ModTag } from './Avatar';
 import { Lightbox } from './Lightbox';
+import { Poll } from './Poll';
 import { RichText } from './RichText';
 import { BottomSheet, useActionSheet } from './Sheet';
 import { Input, Text } from './Text';
@@ -353,6 +354,7 @@ export function PostCard({ post: initial, repostedBy, threadLine, borderless, on
             </Text>
           )}
           {post.text ? <RichText text={post.text} size={15.5} style={{ marginTop: 2 }} /> : null}
+          {post.poll && <Poll post={post} />}
           <Media images={post.images} style={{ marginTop: 10 }} />
           <PostActions post={post} />
         </View>

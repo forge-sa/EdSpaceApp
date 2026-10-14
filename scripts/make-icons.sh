@@ -29,6 +29,8 @@ magick "$OUT/icon.png" -alpha off -depth 8 "PNG24:$OUT/icon.png"
 # Android adaptive icon: foreground inside the 66% safe zone, ribbon hanging from the top.
 glyph "$OUT/android-icon-foreground.png" 1024 none "$INK" 300 44 604 88 360
 glyph "$OUT/android-icon-monochrome.png" 1024 none white 300 44 604 88 360
+# Android notification icon: white on transparent, 96 px, filling the canvas.
+glyph "$OUT/notification-icon.png" 96 none white 40 25 61 12 44
 
 # Splash mark and favicon: the rounded green tile.
 tile() {

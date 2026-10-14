@@ -67,12 +67,15 @@ export function FeedList({ endpoint, header, empty, enabled = true, ref, onRefre
 export function ComposePrompt({ placeholder = 'What’s happening at school?', replyTo, club }: {
   placeholder?: string;
   replyTo?: number;
-  club?: { id: number; name: string };
+  /** `isOwner`: the club's founder, who may also start polls there. */
+  club?: { id: number; name: string; viewer?: { isOwner: boolean } };
 }) {
   const c = useColors();
   const router = useRouter();
   const me = useMe();
-  const params = replyTo ? { replyTo: String(replyTo) } : club ? { club: String(club.id), clubName: club.name } : null;
+  const params = replyTo
+    ? { replyTo: String(replyTo) }
+    : club ? { club: String(club.id), clubName: club.name, ...(club.viewer?.isOwner ? { clubOwner: '1' } : {}) } : null;
   return (
     <Pressable
       onPress={() => router.push(params ? { pathname: '/compose', params } : '/compose')}

@@ -34,7 +34,7 @@ export function internalHref(url: string): Href | null {
     const q = raw ? decodeURIComponent(raw.replace(/\+/g, ' ')) : '';
     return q ? searchHref(q) : ('/explore' as Href);
   }
-  if (['/', '/classes', '/teachers', '/clubs', '/bookmarks', '/notifications', '/settings'].includes(path)) return path as Href;
+  if (['/', '/classes', '/teachers', '/clubs', '/parliament', '/bookmarks', '/notifications', '/settings'].includes(path)) return path as Href;
   return null;
 }
 

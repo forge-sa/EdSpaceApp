@@ -1,5 +1,5 @@
 import { useRouter, useScrollToTop } from 'expo-router';
-import { Shapes } from 'lucide-react-native';
+import { Landmark, Shapes } from 'lucide-react-native';
 import { useRef } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Ribbon } from '@/components/brand';
@@ -15,7 +15,8 @@ import { useColors } from '@/theme';
 type Card =
   | { kind: 'class'; name: string; slug: string; members: number }
   | { kind: 'teachers'; members: number }
-  | { kind: 'clubs'; clubs: number };
+  | { kind: 'clubs'; clubs: number }
+  | { kind: 'parliament'; members: number };
 
 export default function Classes() {
   const c = useColors();
@@ -32,6 +33,7 @@ export default function Classes() {
     ? [
         ...query.data.classes.map((cl) => ({ kind: 'class' as const, name: cl.name, slug: cl.slug, members: cl.members })),
         { kind: 'teachers', members: query.data.teachers },
+        { kind: 'parliament', members: query.data.parliament ?? 0 },
         { kind: 'clubs', clubs: query.data.clubs ?? 0 },
       ]
     : [];
@@ -49,6 +51,28 @@ export default function Classes() {
       ListHeaderComponent={<Text color="muted" size={14} style={{ paddingHorizontal: 4, paddingBottom: 4 }}>Every class at EdVille, from the school timetable</Text>}
       ListEmptyComponent={query.isPending ? <Loading /> : query.isError ? <ErrorState message={errorMessage(query.error)} onRetry={() => query.refetch()} /> : null}
       renderItem={({ item }) => {
+        if (item.kind === 'parliament') {
+          const mine = Boolean(me.parliament);
+          return (
+            <Pressable
+              onPress={() => router.push('/parliament')}
+              accessibilityRole="link"
+              accessibilityLabel={`School Parliament, ${item.members} members${mine ? ', your group' : ''}`}
+              style={({ pressed }) => [
+                styles.card,
+                { backgroundColor: c.surfaceRaised, borderColor: mine || pressed ? c.green : c.border },
+                mine && { borderWidth: 2, padding: 11 },
+              ]}
+            >
+              {mine && <Ribbon width={20} height={30} style={{ position: 'absolute', right: 10, top: -1 }} />}
+              <View style={[styles.name, styles.clubsName, { backgroundColor: c.goldSoft }]}>
+                <Landmark size={15} color={c.gold} />
+                <Text w={800} size={16} color="gold" style={{ letterSpacing: -0.5 }} numberOfLines={1}>Parliament</Text>
+              </View>
+              <Text w={600} size={13} color="muted">{item.members} {item.members === 1 ? 'member' : 'members'}</Text>
+            </Pressable>
+          );
+        }
         if (item.kind === 'clubs') {
           return (
             <Pressable

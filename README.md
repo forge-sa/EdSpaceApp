@@ -27,7 +27,10 @@ Everything the website does:
   Likes; edit your profile.
 - Notifications with an unread badge (checked every 45 s while the app is open, as on the web).
 - Settings: class or teacher status, light / dark / system theme, password, log out, delete account.
+- School Parliament page and role badges; polls (vote, see results and, in public polls, who voted;
+  the parliament and club founders can create them).
 - Moderation for moderators: teacher and club requests, reports, deleting posts, suspending accounts.
+  Parliament roles and the language filter are managed on the website.
 
 ## Run it
 

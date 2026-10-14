@@ -3,6 +3,8 @@
 export type Role = 'student' | 'teacher';
 export type TeacherStatus = 'pending' | 'approved' | 'declined' | null;
 
+export type ParliamentKind = 'president' | 'vice_president' | 'minister';
+
 export interface UserSummary {
   id: number;
   handle: string;
@@ -13,6 +15,8 @@ export interface UserSummary {
   className: string | null;
   classSlug: string | null;
   isAdmin: boolean;
+  /** School parliament role; ministers have custom titles ("Minister of Sports"). */
+  parliament: { kind: ParliamentKind; title: string } | null;
 }
 
 /** The signed-in user's own record. */
@@ -23,6 +27,8 @@ export interface Me extends UserSummary {
   createdAt: number;
   teacherStatus: TeacherStatus;
   timetableTeacher: { slug: string; name: string; timetableUrl: string } | null;
+  /** May start school-wide polls (president, vice-president, ministers given the right). */
+  canPoll: boolean;
 }
 
 export interface Profile extends UserSummary {
@@ -48,6 +54,16 @@ export interface PostImage {
   alt: string;
 }
 
+export interface Poll {
+  anonymous: boolean;
+  options: { id: number; text: string; votes: number }[];
+  total: number;
+  /** The option the viewer picked. */
+  voted: number | null;
+  /** Signed in, hasn't voted, and (for a club poll) is a member of the club. */
+  canVote: boolean;
+}
+
 export interface Post {
   id: number;
   text: string;
@@ -59,6 +75,7 @@ export interface Post {
   rootId: number | null;
   /** The club it was posted in, if any. */
   club: { id: number; name: string } | null;
+  poll: Poll | null;
   counts: { likes: number; reposts: number; replies: number };
   viewer: { liked: boolean; reposted: boolean; bookmarked: boolean };
 }
@@ -92,6 +109,8 @@ export interface AppConfig {
   classes: ClassInfo[];
   teachers: TimetableTeacher[];
   postMaxLength: number;
+  pollMaxOptions?: number;
+  pollOptionMaxLength?: number;
   mailConfigured: boolean;
 }
 
@@ -115,7 +134,15 @@ export interface Club {
 
 export type NotificationType =
   | 'like' | 'repost' | 'follow' | 'reply' | 'mention' | 'teacher_approved'
-  | 'club_approved' | 'club_declined' | 'club_join_request' | 'club_join_approved';
+  | 'club_approved' | 'club_declined' | 'club_join_request' | 'club_join_approved' | 'parliament_role';
+
+export interface ParliamentRole {
+  id: number;
+  kind: ParliamentKind;
+  title: string;
+  canPoll: boolean;
+  user: ListUser;
+}
 
 export interface Notification {
   id: number;
