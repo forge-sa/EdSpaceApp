@@ -1,26 +1,34 @@
 import { useQuery } from '@tanstack/react-query';
 import { Stack, useRouter } from 'expo-router';
-import { Landmark, ListChecks } from 'lucide-react-native';
+import { Ellipsis, Landmark, ListChecks, Pencil, Plus, Trash2, UserPlus } from 'lucide-react-native';
 import { useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { Avatar, ClassTag, ModTag } from '@/components/Avatar';
 import { ComposePrompt, FeedList } from '@/components/Feed';
 import { GroupHero } from '@/components/Group';
+import { useActionSheet, type SheetOption } from '@/components/Sheet';
 import { Text } from '@/components/Text';
-import { Empty, ErrorState, Loading, Notice, SectionTitle, Tabs } from '@/components/ui';
-import { api, errorMessage } from '@/lib/api';
+import { useToast } from '@/components/Toast';
+import { Button, Empty, ErrorState, IconButton, Loading, SectionTitle, Tabs } from '@/components/ui';
+import { api, del, errorMessage, patch } from '@/lib/api';
 import { profileHref } from '@/lib/links';
-import { useRefresh } from '@/lib/queries';
+import { invalidateFeeds, queryClient, useRefresh } from '@/lib/queries';
 import { useMe } from '@/lib/session';
 import type { ParliamentRole } from '@/lib/types';
 import { useColors } from '@/theme';
 
-type Row = { type: 'heading'; title: string } | { type: 'role'; role: ParliamentRole } | { type: 'vacant'; text: string };
+type Row =
+  | { type: 'heading'; title: string }
+  | { type: 'role'; role: ParliamentRole }
+  | { type: 'vacant'; text: string }
+  /** Moderators only: give out an empty seat or add a minister. */
+  | { type: 'assign'; kind: ParliamentRole['kind']; label: string };
 
 /** The school parliament: who holds which role, and their posts and polls. */
 export default function Parliament() {
   const c = useColors();
   const me = useMe();
+  const router = useRouter();
   const [tab, setTab] = useState<'members' | 'posts'>('members');
   const query = useQuery({ queryKey: ['parliament'], queryFn: () => api<{ roles: ParliamentRole[] }>('/parliament').then((d) => d.roles) });
   const { refreshing, onRefresh } = useRefresh(query.refetch);
@@ -52,9 +60,15 @@ export default function Parliament() {
   }
 
   const roles = query.data ?? [];
+  const admin = me.isAdmin;
   const seat = (kind: ParliamentRole['kind'], title: string): Row[] => {
     const role = roles.find((r) => r.kind === kind);
-    return [{ type: 'heading', title }, role ? { type: 'role', role } : { type: 'vacant', text: `No ${title.toLowerCase()} yet.` }];
+    if (role) return [{ type: 'heading', title }, { type: 'role', role }];
+    return [
+      { type: 'heading', title },
+      { type: 'vacant', text: `No ${title.toLowerCase()} yet.` },
+      ...(admin ? [{ type: 'assign', kind, label: `Assign ${title}` } as Row] : []),
+    ];
   };
   const ministers = roles.filter((r) => r.kind === 'minister');
   const rows: Row[] = query.data
@@ -63,6 +77,7 @@ export default function Parliament() {
         ...seat('vice_president', 'Vice-President'),
         { type: 'heading', title: 'Ministers' },
         ...(ministers.length ? ministers.map((role): Row => ({ type: 'role', role })) : [{ type: 'vacant', text: 'No ministers yet.' } as Row]),
+        ...(admin ? [{ type: 'assign', kind: 'minister', label: 'Add minister' } as Row] : []),
       ]
     : [];
 
@@ -76,13 +91,23 @@ export default function Parliament() {
         renderItem={({ item }) =>
           item.type === 'heading' ? <SectionTitle>{item.title}</SectionTitle>
             : item.type === 'vacant' ? <Text color="muted" size={14} style={{ paddingHorizontal: 16, paddingBottom: 8 }}>{item.text}</Text>
-              : <RoleRow role={item.role} />
+              : item.type === 'assign' ? (
+                <Button
+                  title={item.label}
+                  icon={item.kind === 'minister' ? Plus : UserPlus}
+                  variant="outline"
+                  size="sm"
+                  style={{ alignSelf: 'flex-start', marginHorizontal: 16, marginBottom: 8 }}
+                  onPress={() => router.push({ pathname: '/parliament-role', params: { kind: item.kind } })}
+                />
+              )
+                : <RoleRow role={item.role} admin={admin} />
         }
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={c.green} colors={[c.green]} />}
         ListEmptyComponent={query.isPending ? <Loading /> : query.isError ? <ErrorState message={errorMessage(query.error)} onRetry={() => query.refetch()} /> : null}
         ListFooterComponent={
           <View style={{ paddingBottom: 40 }}>
-            {me.isAdmin && query.data ? <Notice>Moderators give and change roles on the EdSpace website’s Parliament page.</Notice> : null}
+            {admin && query.data ? <Text size={13} color="muted" style={{ padding: 16 }}>Only moderators see these controls. Each person can hold one role.</Text> : null}
           </View>
         }
       />
@@ -90,10 +115,43 @@ export default function Parliament() {
   );
 }
 
-function RoleRow({ role }: { role: ParliamentRole }) {
+function RoleRow({ role, admin }: { role: ParliamentRole; admin: boolean }) {
   const c = useColors();
   const router = useRouter();
+  const toast = useToast();
+  const showSheet = useActionSheet();
   const u = role.user;
+
+  const changed = (message: string) => {
+    toast(message, 'success');
+    queryClient.invalidateQueries({ queryKey: ['parliament'] });
+    queryClient.invalidateQueries({ queryKey: ['classes'] });
+    invalidateFeeds();
+  };
+  const run = (fn: () => Promise<unknown>, message: string) => fn().then(() => changed(message)).catch((err) => toast(errorMessage(err), 'error'));
+
+  const menu = () => {
+    const options: SheetOption[] = [];
+    if (role.kind === 'minister') {
+      options.push(
+        { label: 'Change title', icon: Pencil, onPress: () => router.push({ pathname: '/parliament-role', params: { id: String(role.id) } }) },
+        role.canPoll
+          ? { label: 'Stop school polls', icon: ListChecks, onPress: () => run(() => patch(`/parliament/${role.id}`, { canPoll: false }), 'Can’t make polls any more') }
+          : { label: 'Allow school polls', icon: ListChecks, onPress: () => run(() => patch(`/parliament/${role.id}`, { canPoll: true }), 'Can make polls now') },
+      );
+    }
+    options.push({
+      label: 'Remove role',
+      icon: Trash2,
+      destructive: true,
+      onPress: () =>
+        Alert.alert(`Remove @${u.handle}?`, `They won’t be ${role.title} any more.`, [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Remove', style: 'destructive', onPress: () => run(() => del(`/parliament/${role.id}`), 'Role removed') },
+        ]),
+    });
+    showSheet({ title: `${u.displayName} · ${role.title}`, options });
+  };
   return (
     <Pressable
       onPress={() => router.push(profileHref(u.handle))}
@@ -120,6 +178,7 @@ function RoleRow({ role }: { role: ParliamentRole }) {
           )}
         </View>
       </View>
+      {admin && <IconButton icon={Ellipsis} label={`Manage ${role.title}`} color={c.muted} onPress={menu} />}
     </Pressable>
   );
 }

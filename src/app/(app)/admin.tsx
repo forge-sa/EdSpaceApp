@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Redirect, Stack, useRouter } from 'expo-router';
-import { Ban, BadgeCheck, CalendarDays, Check, Flag, Mail, Presentation, Shapes, ShieldCheck, Trash2, X } from 'lucide-react-native';
+import { Ban, BadgeCheck, CalendarDays, Check, Flag, Landmark, Mail, MessageSquareOff, Presentation, Shapes, ShieldCheck, Trash2, X } from 'lucide-react-native';
 import { Alert, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Avatar } from '@/components/Avatar';
 import { CLUBS_KEY, ClubBadge } from '@/components/Club';
@@ -194,6 +194,17 @@ function Moderation() {
           </View>
         </View>
       ))}
+      {heading(MessageSquareOff, 'Language filter')}
+      <View style={styles.links}>
+        <Text size={14} color="muted">Blocked words for posts, replies, poll options and bios.</Text>
+        <Button title="Manage blocked words" icon={MessageSquareOff} variant="outline" size="sm" style={{ alignSelf: 'flex-start' }} onPress={() => router.push('/word-filter')} />
+      </View>
+
+      {heading(Landmark, 'School Parliament')}
+      <View style={styles.links}>
+        <Text size={14} color="muted">Give out the President, Vice-President and minister roles.</Text>
+        <Button title="Manage roles" icon={Landmark} variant="outline" size="sm" style={{ alignSelf: 'flex-start' }} onPress={() => router.push('/parliament')} />
+      </View>
       <View style={{ height: 40 }} />
     </ScrollView>
   );
@@ -205,4 +216,5 @@ const styles = StyleSheet.create({
   hint: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   why: { flexDirection: 'row', gap: 8, paddingTop: 12, paddingHorizontal: 16 },
   tools: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingLeft: 72, paddingRight: 16, paddingBottom: 14 },
+  links: { gap: 10, paddingHorizontal: 16, paddingBottom: 16 },
 });

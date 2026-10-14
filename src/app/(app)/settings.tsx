@@ -1,8 +1,8 @@
 import Constants from 'expo-constants';
 import { Stack, useRouter } from 'expo-router';
 import { Bookmark, CalendarDays, ExternalLink, LogOut, Monitor, Moon, ShieldAlert, Sun, type LucideIcon } from 'lucide-react-native';
-import { useState, type ReactNode } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Alert, Linking, Pressable, StyleSheet, Switch, View } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PlacementField, RolePicker } from '@/components/Placement';
@@ -11,6 +11,7 @@ import { useToast } from '@/components/Toast';
 import { Badge, Button, Field, FormMessage, PasswordInput, Segmented } from '@/components/ui';
 import { API_URL, del, errorMessage, patch, post } from '@/lib/api';
 import { openExternal } from '@/lib/links';
+import { getPushState, setPushEnabled, type PushState } from '@/lib/push';
 import { useMe, useSession } from '@/lib/session';
 import type { Me, Role } from '@/lib/types';
 import { useColors, useTheme, type ThemeSetting } from '@/theme';
@@ -51,6 +52,21 @@ export default function Settings() {
   const [pwBusy, setPwBusy] = useState(false);
   const [delOpen, setDelOpen] = useState(false);
   const [delPw, setDelPw] = useState('');
+  const [push, setPush] = useState<PushState | null>(null);
+  const [pushBusy, setPushBusy] = useState(false);
+
+  useEffect(() => {
+    getPushState().then(setPush);
+  }, []);
+
+  const togglePush = async (on: boolean) => {
+    setPushBusy(true);
+    try {
+      setPush(await setPushEnabled(on));
+    } finally {
+      setPushBusy(false);
+    }
+  };
 
   const placementChanged = placement.role !== me.role
     || (placement.role === 'student' ? placement.className !== (me.className ?? '') : placement.timetableTeacher !== (me.timetableTeacher?.slug ?? ''));
@@ -163,6 +179,30 @@ export default function Settings() {
         />
       </Section>
 
+      <Section title="Notifications">
+        <View style={styles.switchRow}>
+          <View style={{ flex: 1 }}>
+            <Text w={600}>Push notifications</Text>
+            <Text size={14} color="muted">
+              {push === 'unavailable' ? 'Not available in this version of the app (push needs the installed EdSpace app, not Expo Go).'
+                : push === 'denied' ? 'Notifications are turned off for EdSpace in your phone’s settings.'
+                  : 'Likes, replies, follows, club and parliament news, even when the app is closed.'}
+            </Text>
+          </View>
+          <Switch
+            value={push === 'on'}
+            onValueChange={togglePush}
+            disabled={push == null || push === 'unavailable' || push === 'denied' || pushBusy}
+            trackColor={{ true: c.green, false: c.borderStrong }}
+            thumbColor={c.surfaceRaised}
+            accessibilityLabel="Push notifications"
+          />
+        </View>
+        {push === 'denied' && (
+          <Button title="Open phone settings" variant="outline" size="sm" style={{ alignSelf: 'flex-start' }} onPress={() => Linking.openSettings()} />
+        )}
+      </Section>
+
       <Section title="Appearance">
         <Segmented<ThemeSetting>
           value={setting}
@@ -218,6 +258,7 @@ export default function Settings() {
 }
 
 const styles = StyleSheet.create({
+  switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   section: { paddingVertical: 20, paddingHorizontal: 16, gap: 14, borderBottomWidth: StyleSheet.hairlineWidth },
   linkRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 13, paddingHorizontal: 16 },
 });

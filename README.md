@@ -25,12 +25,15 @@ Everything the website does:
   post in a club you're in, and see its members. The founder or a moderator can delete a club.
 - Profiles with banner, photo, bio, timetable, followers/following and Posts / Replies / Media /
   Likes; edit your profile.
-- Notifications with an unread badge (checked every 45 s while the app is open, as on the web).
+- Notifications with an unread badge (checked every 45 s while the app is open, as on the web), and
+  **push notifications** for all of them, even when the app is closed (see below). Tapping a push
+  opens the post, profile, club or page it's about; Settings has an on/off switch.
 - Settings: class or teacher status, light / dark / system theme, password, log out, delete account.
 - School Parliament page and role badges; polls (vote, see results and, in public polls, who voted;
   the parliament and club founders can create them).
 - Moderation for moderators: teacher and club requests, reports, deleting posts, suspending accounts.
-  Parliament roles and the language filter are managed on the website.
+  Moderators also give out School Parliament roles (on the Parliament screen) and manage the
+  language filter's blocked words.
 
 ## Run it
 
@@ -109,10 +112,28 @@ npx expo lint
 npx expo-doctor
 ```
 
+## Push notifications
+
+The server pushes every notification through Expo's push service to the phones the person is
+signed in on (logging out stops it). Two things are needed before pushes reach real phones:
+
+- **A development or store build.** Push doesn't work in Expo Go on Android (it does on iOS).
+- **Credentials** (once):
+  - *Android*: in the [Firebase console](https://console.firebase.google.com) create a project, add
+    an Android app with the package `com.altynkhan.edspace`, download **google-services.json** and
+    put it in this folder (it's picked up automatically by `app.config.ts`; it's fine to commit).
+    Then, in Project settings → Service accounts, **Generate new private key**, and upload that file
+    with `npx eas-cli@latest credentials` → Android → production → Google Service Account →
+    *Manage your Google Service Account Key for Push Notifications (FCM V1)* → *Upload a new
+    service account key*. Never commit that key.
+  - *iOS*: needs the paid Apple Developer account; the first `eas build` for iOS offers to create
+    the push key — answer yes.
+
+The Android notification icon is `assets/images/notification-icon.png` (made by
+`scripts/make-icons.sh`).
+
 ## Not included yet
 
-- **Push notifications** — the server has no push support; notifications show when the app is
-  opened (and the badge refreshes every 45 s while it's open).
 - **Opening edville.space links in the app from outside** (universal / app links) — needs
   `apple-app-site-association` and `assetlinks.json` served by the website. The `edspace://`
   scheme works already, e.g. `edspace:///post/12`.

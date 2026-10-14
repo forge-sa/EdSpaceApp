@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router';
+import { PushNotifications } from '@/components/PushNotifications';
 import { fonts, useColors } from '@/theme';
 
 export const unstable_settings = { anchor: '(tabs)' };
@@ -6,6 +7,8 @@ export const unstable_settings = { anchor: '(tabs)' };
 export default function AppLayout() {
   const c = useColors();
   return (
+    <>
+    <PushNotifications />
     <Stack
       screenOptions={{
         headerStyle: { backgroundColor: c.surface },
@@ -21,6 +24,8 @@ export default function AppLayout() {
       <Stack.Screen name="compose" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="edit-profile" options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="new-club" options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="parliament-role" options={{ presentation: 'modal', headerShown: false }} />
     </Stack>
+    </>
   );
 }
