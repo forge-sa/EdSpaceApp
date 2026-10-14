@@ -57,7 +57,10 @@ export function ClubStatusPill({ club }: { club: Club }) {
     : <Pill color="danger">Not approved</Pill>;
 }
 
-/** Join, or Joined (asks before leaving). The founder can't leave, so gets no button. */
+/**
+ * Ask to join → Requested → Joined; the club's founder approves requests.
+ * Cancelling a request or leaving asks first. The founder gets no button.
+ */
 export function JoinButton({ club, small }: { club: Club; small?: boolean }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
@@ -68,7 +71,7 @@ export function JoinButton({ club, small }: { club: Club; small?: boolean }) {
     try {
       const res = await api<{ club: Club }>(`/clubs/${club.id}/join`, { method: join ? 'POST' : 'DELETE' });
       clubChanged(res.club);
-      if (join) toast(`You joined ${club.name}`, 'success');
+      if (join) toast('Request sent — the club’s founder will review it', 'success');
     } catch (err) {
       toast(errorMessage(err), 'error');
     } finally {
@@ -77,15 +80,22 @@ export function JoinButton({ club, small }: { club: Club; small?: boolean }) {
   };
 
   const leave = () =>
-    Alert.alert(`Leave ${club.name}?`, 'You can join again any time.', [
+    Alert.alert(`Leave ${club.name}?`, 'To come back you’ll need to ask the founder again.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Leave', style: 'destructive', onPress: () => run(false) },
     ]);
 
+  const cancel = () =>
+    Alert.alert('Cancel your request?', `You asked to join ${club.name}.`, [
+      { text: 'Keep it', style: 'cancel' },
+      { text: 'Cancel request', style: 'destructive', onPress: () => run(false) },
+    ]);
+
   const size = small ? 'sm' : 'md';
-  return club.viewer.isMember
-    ? <Button title="Joined" icon={small ? undefined : Check} variant="outline" size={size} onPress={leave} loading={busy} style={!small && { alignSelf: 'flex-start' }} />
-    : <Button title={small ? 'Join' : 'Join club'} variant="dark" size={size} onPress={() => run(true)} loading={busy} style={!small && { alignSelf: 'flex-start' }} />;
+  const style = !small && { alignSelf: 'flex-start' as const };
+  if (club.viewer.isMember) return <Button title="Joined" icon={small ? undefined : Check} variant="outline" size={size} onPress={leave} loading={busy} style={style} />;
+  if (club.viewer.requested) return <Button title="Requested" icon={small ? undefined : Hourglass} variant="outline" size={size} onPress={cancel} loading={busy} style={style} />;
+  return <Button title="Ask to join" variant="dark" size={size} onPress={() => run(true)} loading={busy} style={style} />;
 }
 
 /** A club in a list: badge, name, description, and a button or status on the right. */

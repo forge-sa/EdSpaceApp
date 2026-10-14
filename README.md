@@ -21,8 +21,8 @@ Everything the website does:
   share links, @mentions, #hashtags, links that open EdSpace pages in-app.
 - Explore with search (posts, people, classes), trending tags and the class list.
 - Classes and the Teachers staff room, with members and timetable links.
-- Clubs: start one (a moderator approves it first), join or leave, post in a club you're in, and
-  see its members. The founder or a moderator can delete a club.
+- Clubs: start one (a moderator approves it first), ask to join (the club's founder approves),
+  post in a club you're in, and see its members. The founder or a moderator can delete a club.
 - Profiles with banner, photo, bio, timetable, followers/following and Posts / Replies / Media /
   Likes; edit your profile.
 - Notifications with an unread badge (checked every 45 s while the app is open, as on the web).

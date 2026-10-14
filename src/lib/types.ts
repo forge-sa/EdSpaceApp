@@ -107,10 +107,15 @@ export interface Club {
   /** null when the founder's account is suspended or deleted. */
   owner: UserSummary | null;
   members: number;
-  viewer: { isMember: boolean; isOwner: boolean };
+  /** Join requests waiting; only sent to the club's founder (null for everyone else). */
+  requests: number | null;
+  /** `requested`: asked to join, waiting for the founder. */
+  viewer: { isMember: boolean; requested: boolean; isOwner: boolean };
 }
 
-export type NotificationType = 'like' | 'repost' | 'follow' | 'reply' | 'mention' | 'teacher_approved' | 'club_approved' | 'club_declined';
+export type NotificationType =
+  | 'like' | 'repost' | 'follow' | 'reply' | 'mention' | 'teacher_approved'
+  | 'club_approved' | 'club_declined' | 'club_join_request' | 'club_join_approved';
 
 export interface Notification {
   id: number;

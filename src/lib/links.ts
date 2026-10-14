@@ -9,6 +9,7 @@ export const profileHref = (handle: string) => `/@${handle}` as Href;
 export const postHref = (id: number) => `/post/${id}` as Href;
 export const classHref = (slug: string) => `/classes/${encodeURIComponent(slug)}` as Href;
 export const clubHref = (id: number) => `/clubs/${id}` as Href;
+export const clubRequestsHref = (id: number) => `/clubs/${id}/requests` as Href;
 export const searchHref = (q: string, type?: 'users') =>
   ({ pathname: '/search', params: type ? { q, type } : { q } }) as Href;
 

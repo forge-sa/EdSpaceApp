@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Ellipsis, Shapes, Trash2 } from 'lucide-react-native';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { ChevronRight, Ellipsis, Shapes, Trash2, UserPlus } from 'lucide-react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { clubKey, clubRemoved, JoinButton, memberCount, type ClubData } from '@/components/Club';
 import { ComposePrompt } from '@/components/Feed';
 import { GroupHero, GroupScreen } from '@/components/Group';
@@ -10,7 +10,7 @@ import { Span, Text } from '@/components/Text';
 import { useToast } from '@/components/Toast';
 import { Empty, IconButton, Loading, Notice } from '@/components/ui';
 import { api, del, errorMessage } from '@/lib/api';
-import { profileHref } from '@/lib/links';
+import { clubRequestsHref, profileHref } from '@/lib/links';
 import { useMe } from '@/lib/session';
 import { useColors } from '@/theme';
 
@@ -75,12 +75,27 @@ export default function ClubPage() {
     <>Started by <Span w={600} color="greenDeep" onPress={() => router.push(profileHref(club.owner!.handle))}>@{club.owner.handle}</Span> · {memberCount(club.members)}</>
   ) : memberCount(club.members);
   const badge = <Shapes size={34} color={c.greenDeep} />;
-  const about = (club.description || open) ? (
+  const requests = club.requests ?? 0;
+  const about = (
     <View style={[styles.about, { borderBottomColor: c.border }]}>
       {club.description ? <Text>{club.description}</Text> : null}
       <JoinButton club={club} />
+      {/* Only the founder approves members. */}
+      {open && club.viewer.isOwner && (
+        <Pressable
+          onPress={() => router.push(clubRequestsHref(club.id))}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.requests, { backgroundColor: requests ? c.greenSoft : c.hover }, pressed && { opacity: 0.8 }]}
+        >
+          <UserPlus size={18} color={requests ? c.greenDeep : c.muted} />
+          <Text w={600} size={14} color={requests ? 'greenDeep' : 'muted'} style={{ flex: 1 }}>
+            {requests ? `${requests} ${requests === 1 ? 'person wants' : 'people want'} to join` : 'Join requests'}
+          </Text>
+          <ChevronRight size={18} color={requests ? c.greenDeep : c.muted} />
+        </Pressable>
+      )}
     </View>
-  ) : null;
+  );
 
   if (!open) {
     return (
@@ -110,7 +125,13 @@ export default function ClubPage() {
         hideClub
         endpoint={`/feed/club/${club.id}`}
         members={members}
-        emptyPosts={<Empty icon={Shapes} title="No posts yet">{club.viewer.isMember ? 'Be the first to post in this club!' : 'Join the club to post here.'}</Empty>}
+        emptyPosts={
+          <Empty icon={Shapes} title="No posts yet">
+            {club.viewer.isMember ? 'Be the first to post in this club!'
+              : club.viewer.requested ? 'You can post here once the founder approves your request.'
+                : 'Only members can post here. Ask to join!'}
+          </Empty>
+        }
         emptyMembers={`Be the first to join ${club.name}.`}
       />
     </View>
@@ -119,4 +140,5 @@ export default function ClubPage() {
 
 const styles = StyleSheet.create({
   about: { paddingHorizontal: 16, paddingBottom: 14, gap: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  requests: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 12 },
 });

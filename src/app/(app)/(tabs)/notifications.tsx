@@ -9,14 +9,17 @@ import { Span, Text } from '@/components/Text';
 import { Empty, ErrorState, Loading } from '@/components/ui';
 import { api, errorMessage, post } from '@/lib/api';
 import { shortTime } from '@/lib/format';
-import { clubHref, postHref, profileHref } from '@/lib/links';
+import { clubHref, clubRequestsHref, postHref, profileHref } from '@/lib/links';
 import { putPosts } from '@/lib/postStore';
 import { useRefresh } from '@/lib/queries';
 import { useSession } from '@/lib/session';
 import type { Notification } from '@/lib/types';
 import { useColors } from '@/theme';
 
-const ICONS: Record<string, LucideIcon> = { like: Heart, repost: Repeat2, follow: UserPlus, teacher_approved: BadgeCheck, club_approved: Shapes, club_declined: CircleX };
+const ICONS: Record<string, LucideIcon> = {
+  like: Heart, repost: Repeat2, follow: UserPlus, teacher_approved: BadgeCheck,
+  club_approved: Shapes, club_declined: CircleX, club_join_request: UserPlus, club_join_approved: Shapes,
+};
 const VERB: Record<string, string> = {
   like: 'liked your post',
   repost: 'reposted your post',
@@ -28,6 +31,8 @@ const VERB: Record<string, string> = {
 function verb(n: Notification) {
   if (n.type === 'club_approved') return <>approved your club <Span w={700}>{n.club?.name}</Span> — it’s now open for everyone to join</>;
   if (n.type === 'club_declined') return <>didn’t approve your club <Span w={700}>{n.club?.name}</Span></>;
+  if (n.type === 'club_join_request') return <>asked to join your club <Span w={700}>{n.club?.name}</Span></>;
+  if (n.type === 'club_join_approved') return <>accepted you into <Span w={700}>{n.club?.name}</Span></>;
   return VERB[n.type] ?? '';
 }
 
@@ -36,6 +41,8 @@ function targetOf(n: Notification): Href {
   if (n.type === 'teacher_approved') return '/teachers';
   if (n.type === 'club_approved' && n.club) return clubHref(n.club.id);
   if (n.type === 'club_declined') return '/clubs';
+  if (n.type === 'club_join_request' && n.club) return clubRequestsHref(n.club.id);
+  if (n.type === 'club_join_approved' && n.club) return clubHref(n.club.id);
   return postHref(n.post?.id ?? 0);
 }
 

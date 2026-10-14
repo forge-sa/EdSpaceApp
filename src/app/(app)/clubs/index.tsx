@@ -71,7 +71,9 @@ export default function Clubs() {
             club={club}
             meta={
               <Text size={13} w={600} color="muted">
-                {memberCount(club.members)}{club.viewer.isOwner ? ' · You started it' : club.viewer.isMember ? ' · You’re a member' : ''}
+                {memberCount(club.members)}
+                {club.viewer.isOwner ? ` · You started it${club.requests ? ` · ${club.requests} asking to join` : ''}`
+                  : club.viewer.isMember ? ' · You’re a member' : club.viewer.requested ? ' · Request sent' : ''}
               </Text>
             }
             right={<JoinButton club={club} small />}

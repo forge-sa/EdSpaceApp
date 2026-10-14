@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { api, errorMessage } from '@/lib/api';
 import { profileHref } from '@/lib/links';
@@ -54,7 +54,8 @@ export function FollowButton({ user: target, following: initial, onChange, small
   );
 }
 
-export function UserRow({ user, showBio = true }: { user: ListUser; showBio?: boolean }) {
+/** `right` replaces the Follow button. */
+export function UserRow({ user, showBio = true, right }: { user: ListUser; showBio?: boolean; right?: ReactNode }) {
   const c = useColors();
   const router = useRouter();
   return (
@@ -73,7 +74,7 @@ export function UserRow({ user, showBio = true }: { user: ListUser; showBio?: bo
         <Text size={14} color="muted" numberOfLines={1}>@{user.handle}</Text>
         {showBio && user.bio ? <Text size={14} numberOfLines={2} style={{ marginTop: 3 }}>{user.bio}</Text> : null}
       </View>
-      <FollowButton user={user} following={user.viewer.following} small />
+      {right ?? <FollowButton user={user} following={user.viewer.following} small />}
     </Pressable>
   );
 }
