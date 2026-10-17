@@ -1,7 +1,7 @@
 # EdSpace for Android & iOS
 
 The native app for [EdSpace](https://edville.space), the social network for EdVille
-students and teachers. It is the mobile counterpart of edville.sapce and talks to
+students and teachers. It is the mobile counterpart of [EdSpace](https://edville.space) and talks to
 the same API, so accounts, posts and moderation are shared with the website.
 
 Built with [Expo](https://expo.dev) (SDK 57, React Native 0.86) and Expo Router — one TypeScript
